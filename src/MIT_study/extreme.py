@@ -75,56 +75,48 @@ def find_pdf(param_dict):
     }, x
 
 
-def plot_fits(x, g, pdf_dict, linewidth=3):
+def plot_fits(x, g, pdf_dict, linewidth=2):
     plt.plot(
         x,
         pdf_dict["gumbel"],
-        label="Gumbel fit",
+        label="Gumbel",
         color="r",
         linewidth=linewidth,
     )
     plt.plot(
         x,
         pdf_dict["weibull"],
-        label="Weibull fit",
+        label="Weibull",
         color="b",
         linewidth=linewidth,
     )
     plt.plot(
         x,
         pdf_dict["lognorm"],
-        label="Weibull fit",
+        label="Lognormal",
         color="g",
         linewidth=linewidth,
     )
     plt.plot(
         x,
         pdf_dict["rayleigh"],
-        label="Weibull fit",
-        color="g",
+        label="Rayleigh",
+        color="y",
         linewidth=linewidth,
     )
 
     # plot the raw data as a histogram
     plt.hist(
-        g, bins=10, density=True, color="k", alpha=0.5, label="Mean 5 min wspd"
+        g['wspd_merge'], bins=10, density=True, color="k", alpha=0.5, label="Mean 5 min wspd"
     )
     plt.legend()
     plt.show()
 
 
-def run_station(g, plot_fits=False):
-    # print("fitting station",flush = True)
+def run_station(g):
     param_dict = fit(g)
-    # print("finding pdf",flush = True)
     pdf_dict, x = find_pdf(param_dict)
-    # print("finding extreme magnitude",flush = True)
-    magnitude_dict = find_magnitudes(param_dict)
-    # print(magnitude_dict)
-    # print_magnitudes(magnitude_dict)
-    if plot_fits:
-        plot_fits(x, g, pdf_dict)
-    return magnitude_dict
+    return find_magnitudes(param_dict)
 
 
 def dump_output(magnitude_dict):
@@ -146,8 +138,7 @@ def applyParallel(dfGrouped, func):
     # )
     return magnitude_dict       
 
-
-def main():
+def read_and_convert():
     filename = (
         "/home/vanessa/hulk/MIT_study/data/mesonet_wind_2015_2022.parquet.gzip"
     )
@@ -155,13 +146,21 @@ def main():
     print("done reading in the data")
     df["wspd_merge"] = df["wspd_merge"] * 2.23694  # convert to mph
     print("done converting to mph")
-    # df[["station", "wspd_merge"]].groupby(["station"]).apply(run_station)
+    return df
 
+def main():
+    df = read_and_convert()
     magnitude_dict = applyParallel(
         df[["station", "wspd_merge"]].groupby(["station"]), run_station
     )
     dump_output(magnitude_dict)
 
+def run_plotting(g):
+    param_dict = fit(g)
+    pdf_dict, x = find_pdf(param_dict)
+    plot_fits(x, g, pdf_dict)
 
-# if __name__ == "__main__":
-#     main()
+def main_plot():
+    df = read_and_convert()
+    df[["station", "wspd_merge"]].groupby(["station"]).apply(run_plotting)
+
